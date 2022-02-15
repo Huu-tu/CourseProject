@@ -1,0 +1,157 @@
+<form class="mt-4" method="POST" action="/courses/trash-form-action">
+    <div>
+        <a href="/me/stored/courses">My Course</a>
+        <h3>Course Deleted</h3>
+    </div>
+    <div class="mt-4 d-flex align-items-center">
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" value="" id="checkbox-all">
+            <label class="form-check-label" for="checkbox-all">
+                All
+            </label>
+        </div>
+        <select class="form-control form-control-sm checkbox-all-option" name="action" required>
+            <option value="">Open this select menu</option>
+            <option value="restore">Restore</option>
+            <option value="delete-forever">Delete Forever</option>
+        </select>
+        <button id="check-all-submit" class="btn btn-primary btn-sm" disabled="disabled">Apply</button>
+
+<!--        <form class="form-inline" action="/search/name">-->
+<!--            <input name="name" class="form-control mr-sm-2" type="search" placeholder="name" aria-label="Search">-->
+<!--            <button class="btn btn-info" type="submit">Search</button>-->
+<!--        </form>-->
+    </div>
+    <table class="table mt-4">
+        <thead>
+        <tr>
+            <th scope="col">#</th>
+            <th scope="col">Name</th>
+            <th scope="col">Level</th>
+            <th scope="col">Time Delete</th>
+            <th scope="col"></th>
+        </tr>
+        </thead>
+        <tbody id="item">
+        {{#each courses}}
+            <tr>
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="courseIds[]" value="{{this._id}}">
+                    </div>
+                </td>
+                <th scope="row">{{sum @index 1}}</th>
+                <td>{{this.name}}</td>
+                <td>{{this.level}}</td>
+                <td>{{this.createdAt}}</td>
+                <td>
+                    <button type="button" class="btn btn-info"><a href="" class="btn-restore" style="color: white" data-id="{{this._id}}">Restore</a></button>
+                    <button type="button" class="btn btn-info"><a href="" style="color: white" data-toggle="modal" data-id="{{this._id}}" data-target="#delete-course">Delete Forever</a></button>
+                </td>
+            </tr>
+        {{else}}
+            <tr>
+                <td colspan="5">
+                    You don't have any course.
+                </td>
+            </tr>
+        {{/each}}
+        </tbody>
+    </table>
+</form>
+
+<!--Confirm delete course-->
+<div id="delete-course" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Course</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Do you want to delete forever this course?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="btn-delete-course" class="btn btn-danger">Delete Forever</button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Hidden form-->
+<form name="delete-course-form" method="POST"></form>
+<form name="restore-course-form" method="POST"></form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function (){
+        let courseID;
+        let deleteForm = document.forms['delete-course-form'];
+        let restoreForm = document.forms['restore-course-form'];
+        let btnDeleteCourse = document.getElementById('btn-delete-course');
+        let restoreBtn = $('.btn-restore');
+        let checkAllSubmit = document.getElementById('check-all-submit');
+        let items = document.querySelector('#item');
+        let checkAll = document.querySelector('#checkbox-all');
+        let checkItem = document.querySelectorAll('input[name="courseIds[]"]');
+
+
+        $('#delete-course').on('show.bs.modal', function (event) {
+            let button = $(event.relatedTarget);
+            courseID = button.data('id');
+        })
+
+        btnDeleteCourse.onclick = function (){
+            deleteForm.action = '/courses/' + courseID + '/force?_Method=DELETE';
+            deleteForm.submit();
+        }
+
+        //RestoreBtn click
+        restoreBtn.click(function (e){
+          e.preventDefault();
+
+          let courseId = $(this).data('id');
+          restoreForm.action = '/courses/' + courseId + '/restore?_Method=PATCH';
+          restoreForm.submit();
+        });
+
+        //Checked All
+        checkAll.addEventListener('change', function (){
+          for (let item of checkItem){
+            item.checked = this.checked;
+          }
+            checkAllSubmitBtn();
+        })
+
+        //Check Item
+        for (let i = 0;i<checkItem.length;i++){
+          checkItem[i].addEventListener('change',function (){
+            let checkLength = items.querySelectorAll('input:checked').length;
+            checkAll.checked = checkLength === checkItem.length;
+              checkAllSubmitBtn();
+          })
+        }
+
+        //Check All submit button clicked
+        // checkAllSubmitBtn.addEventListener('submit',function (e){
+        //     let isSubmittable = !checkAllSubmitBtn.classList.contains('disabled');
+        //     if (!isSubmittable){
+        //         e.preventDefault();
+        //     }
+        // });
+
+        //Re render checkAllSubmitBtn
+        function checkAllSubmitBtn(){
+          let checkItem = items.querySelectorAll('input:checked').length;
+          if (checkItem >0){
+            checkAllSubmit.removeAttribute('disabled');
+          }else {
+            let a = document.createAttribute('disabled');
+            a.value = "disabled";
+            checkAllSubmit.setAttributeNode(a);
+          }
+        }
+    });
+</script>
